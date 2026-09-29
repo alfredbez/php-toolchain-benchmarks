@@ -20,7 +20,7 @@ final readonly class HtmlRenderer
      *     kinds: array<string, list<string>>,
      *     projects: array<string, array<string, array<string, list<array{date: string, mean: float, stddev: float, min: float, max: float, memory_mb: null|float, relative: float, timed_out: bool}>>>>
      * } $latest
-     * @param non-empty-list<array{generated: string, dir: string, kinds: array<string, list<string>>, projects: array<string, array<string, list<array{tool: string, mean: float, stddev: float, min: float, max: float, memory_mb: null|float, relative: float, timed_out: bool}>>>}> $runs
+     * @param non-empty-list<array{generated: string, dir: string, environment: null|array<array-key, mixed>, kinds: array<string, list<string>>, projects: array<string, array<string, list<array{tool: string, mean: float, stddev: float, min: float, max: float, memory_mb: null|float, relative: float, timed_out: bool}>>>}> $runs
      *
      * @return non-empty-string
      */
@@ -48,11 +48,11 @@ final readonly class HtmlRenderer
             <meta name="description" content="Performance benchmarks comparing PHP tools: formatters (Mago Fmt, Pretty PHP), linters (Mago Lint, PHP-CS-Fixer, PHPCS), and analyzers (Mago, PHPStan, Psalm, Phan). Execution time and memory usage across real-world projects.">
             <meta name="keywords" content="PHP, benchmark, formatter, linter, static analysis, Mago, PHPStan, Psalm, Phan, PHP-CS-Fixer, PHPCS, Pretty PHP, performance, comparison">
             <meta name="robots" content="index, follow">
-            <link rel="canonical" href="https://carthage-software.github.io/static-analyzers-benchmarks/">
+            <link rel="canonical" href="https://alfredbez.github.io/php-toolchain-benchmarks/">
             <meta property="og:type" content="website">
             <meta property="og:title" content="PHP Toolchain Benchmarks">
             <meta property="og:description" content="Performance benchmarks comparing PHP formatters, linters, and static analyzers across real-world projects.">
-            <meta property="og:url" content="https://carthage-software.github.io/static-analyzers-benchmarks/">
+            <meta property="og:url" content="https://alfredbez.github.io/php-toolchain-benchmarks/">
             <meta name="twitter:card" content="summary">
             <meta name="twitter:title" content="PHP Toolchain Benchmarks">
             <meta name="twitter:description" content="Performance benchmarks comparing PHP formatters, linters, and analyzers.">
@@ -60,11 +60,12 @@ final readonly class HtmlRenderer
             </head>
             <body>
             <h1>PHP Toolchain Benchmarks</h1>
-            <p class="meta">Latest: {$generated} &middot; {$runCount} run(s) &middot; <a href="https://github.com/carthage-software/static-analyzers-benchmarks">Source</a></p>
+            <p class="meta">Latest: {$generated} &middot; {$runCount} run(s) &middot; <a href="https://github.com/alfredbez/php-toolchain-benchmarks">Source</a></p>
             <section>
             <h2>Methodology</h2>
             <p>This project benchmarks PHP <strong>formatters</strong> (<a href="https://github.com/carthage-software/mago">Mago Fmt</a>, <a href="https://github.com/lkrms/pretty-php">Pretty PHP</a>), <strong>linters</strong> (<a href="https://github.com/carthage-software/mago">Mago Lint</a>, <a href="https://github.com/PHP-CS-Fixer/PHP-CS-Fixer">PHP-CS-Fixer</a>, <a href="https://github.com/PHPCSStandards/PHP_CodeSniffer">PHPCS</a>), and <strong>static analyzers</strong> (<a href="https://github.com/carthage-software/mago">Mago</a>, <a href="https://github.com/phpstan/phpstan">PHPStan</a>, <a href="https://github.com/vimeo/psalm">Psalm</a>, <a href="https://github.com/phan/phan">Phan</a>) against real-world open-source codebases.</p>
-            <p>All tools are run on the same machine, during the same session, under identical conditions. Every tool is configured at its <strong>strictest settings</strong> to ensure maximum work. Execution time is measured using a built-in profiler with multiple runs. Peak memory usage is calculated by polling RSS across the entire process tree (including child processes). For static analyzers, both cold (uncached) and hot (cached) runs are measured. A <strong>5-minute timeout</strong> is enforced on every run; tools marked as "Timed out" could not complete within this limit. Results are sorted by mean execution time.</p>
+            <p>Each project runs on one GitHub-hosted Ubuntu runner. Results show three timing runs and one separate memory run. Memory is sampled as summed RSS across the process tree. Analyzer caches are cleared for cold runs and warmed for hot runs. Each run has a three-minute timeout.</p>
+            <p><strong>Read results within one project and one weekly run.</strong> GitHub-hosted hardware varies between weeks. Analyzer rules and findings also differ, so speed alone does not establish equivalent analysis. The overview shows only each project's latest complete run. Open a historical run for its runner, PHP version and project commit.</p>
             </section>
             <nav>
             <div class="tabs" id="kind-tabs">
@@ -78,7 +79,6 @@ final readonly class HtmlRenderer
             <div id="memory-content"></div>
             <section>
             <h2>Run-over-Run Diff</h2>
-            <div id="run-diff"></div>
             </section>
             <section>
             <h2>All Runs</h2>
@@ -145,7 +145,7 @@ final readonly class HtmlRenderer
      *     kinds: array<string, list<string>>,
      *     projects: array<string, array<string, array<string, list<array{date: string, mean: float, stddev: float, min: float, max: float, memory_mb: null|float, relative: float, timed_out: bool}>>>>
      * } $latest
-     * @param non-empty-list<array{generated: string, dir: string, kinds: array<string, list<string>>, projects: array<string, array<string, list<array{tool: string, mean: float, stddev: float, min: float, max: float, memory_mb: null|float, relative: float, timed_out: bool}>>>}> $runs
+     * @param non-empty-list<array{generated: string, dir: string, environment: null|array<array-key, mixed>, kinds: array<string, list<string>>, projects: array<string, array<string, list<array{tool: string, mean: float, stddev: float, min: float, max: float, memory_mb: null|float, relative: float, timed_out: bool}>>>}> $runs
      *
      * @return non-empty-string
      */
@@ -191,6 +191,7 @@ final readonly class HtmlRenderer
             }
 
             function fmt(v){return v<10?v.toFixed(3):v<100?v.toFixed(2):v.toFixed(1)}
+            function html(v){return String(v).replace(/[&<>"']/g,function(c){return{"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[c]})}
 
             /* ── LATEST data helpers (aggregated, tool-keyed) ── */
 
@@ -226,16 +227,6 @@ final readonly class HtmlRenderer
 
             function getRunEntries(run,proj,cat){
                 return((run.projects[proj]||{})[cat])||[];
-            }
-
-            function getTwoLatestRuns(proj,cat){
-                var found=[];
-                for(var i=RUNS.length-1;i>=0;i--){
-                    var e=getRunEntries(RUNS[i],proj,cat);
-                    if(e.length){found.push(RUNS[i]);if(found.length===2)break}
-                }
-                if(found.length<2)return null;
-                return{latest:found[0],prev:found[1]};
             }
 
             /* ── Render functions ── */
@@ -356,49 +347,6 @@ final readonly class HtmlRenderer
                 document.getElementById("memory-content").innerHTML=h;
             }
 
-            function renderRunDiff(){
-                var proj=curProj();
-                var cats=curCats();
-                var h='';
-                for(var ci=0;ci<cats.length;ci++){
-                    var cat=cats[ci];
-                    var pair=getTwoLatestRuns(proj,cat);
-                    if(!pair)continue;
-                    var cur=getRunEntries(pair.latest,proj,cat);
-                    var old=getRunEntries(pair.prev,proj,cat);
-                    var oldMap={};
-                    for(var i=0;i<old.length;i++){var n=old[i].tool||"";if(!old[i].timed_out)oldMap[n]=old[i]}
-                    var rows=[];
-                    for(var j=0;j<cur.length;j++){
-                        var c=cur[j];
-                        if(c.timed_out)continue;
-                        var cn=c.tool||"";
-                        var o=oldMap[cn];
-                        if(!o)continue;
-                        var delta=c.mean-o.mean;
-                        var pct=((delta/o.mean)*100);
-                        rows.push({name:cn,prev:o.mean,curr:c.mean,delta:delta,pct:pct});
-                    }
-                    if(!rows.length)continue;
-                    h+='<h3>'+catLabel(cat)+'</h3>';
-                    h+='<p class="muted">Comparing: '+pair.latest.generated+' vs '+pair.prev.generated+'</p>';
-                    h+='<table><tr><th>Tool</th><th>Previous</th><th>Current</th><th>Delta</th><th>Change</th></tr>';
-                    for(var r=0;r<rows.length;r++){
-                        var row=rows[r];
-                        var cls=row.delta<=0?'diff-negative':'diff-positive';
-                        var sign=row.delta<=0?'':'+';
-                        h+='<tr><td>'+row.name+'</td>';
-                        h+='<td>'+fmt(row.prev)+'s</td>';
-                        h+='<td>'+fmt(row.curr)+'s</td>';
-                        h+='<td class="'+cls+'">'+sign+fmt(row.delta)+'s</td>';
-                        h+='<td class="'+cls+'">'+sign+row.pct.toFixed(1)+'%</td></tr>';
-                    }
-                    h+='</table>';
-                }
-                if(!h){h='<p class="muted">No comparable data between runs.</p>'}
-                document.getElementById("run-diff").innerHTML=h;
-            }
-
             function buildTable(entries){
                 var h='<table><tr><th>Tool</th><th>Mean</th><th>StdDev</th><th>Min</th><th>Max</th><th>Memory</th><th>Rel</th></tr>';
                 for(var i=0;i<entries.length;i++){
@@ -435,6 +383,11 @@ final readonly class HtmlRenderer
                     if(!runHtml)continue;
                     h+='<details>';
                     h+='<summary>'+run.generated+' ('+run.dir+')</summary>';
+                    if(run.environment){
+                        var env=run.environment;
+                        h+='<p class="muted">Runner: '+html(env.image||'?')+' '+html(env.image_version||'?')+', '+html(env.machine||'?')+'; PHP '+html(env.php||'?')+'; project commit '+html(env.project_commit||'?')+'</p>';
+                    }
+                    h+='<p><a href="'+encodeURIComponent(run.dir)+'/report.json">Raw report and exact versions</a></p>';
                     h+=runHtml;
                     h+='</details>';
                 }
@@ -442,7 +395,7 @@ final readonly class HtmlRenderer
                 document.getElementById("details-content").innerHTML=h;
             }
 
-            function render(){renderCategories();renderMemory();renderRunDiff();renderDetails()}
+            function render(){renderCategories();renderMemory();renderDetails()}
             render();writeParams();
             })();
             JS;

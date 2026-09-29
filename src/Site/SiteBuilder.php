@@ -32,8 +32,15 @@ final readonly class SiteBuilder
 
         $runs = ReportParser::loadAll($resultsDir);
         if ($runs === []) {
-            Output::error('No benchmark results found in results/');
-            return 1;
+            Filesystem\create_directory($resultsDir);
+            File\write(
+                $resultsDir . '/index.html',
+                '<!doctype html><html lang="en"><meta charset="utf-8"><title>PHP toolchain benchmarks</title>'
+                . '<body><h1>PHP toolchain benchmarks</h1><p>The first weekly run has not completed yet.</p>'
+                . '<p><a href="https://github.com/alfredbez/php-toolchain-benchmarks">Source and method</a></p></body></html>',
+            );
+            Output::info('No reports yet; built waiting page.');
+            return 0;
         }
 
         self::writeOutputFiles($resultsDir, $runs);
@@ -49,7 +56,7 @@ final readonly class SiteBuilder
 
     /**
      * @param non-empty-string $resultsDir
-     * @param non-empty-list<array{generated: string, dir: string, kinds: array<string, list<string>>, projects: array<string, array<string, list<array{tool: string, mean: float, stddev: float, min: float, max: float, memory_mb: null|float, relative: float, timed_out: bool}>>>}> $runs
+     * @param non-empty-list<array{generated: string, dir: string, environment: null|array<array-key, mixed>, kinds: array<string, list<string>>, projects: array<string, array<string, list<array{tool: string, mean: float, stddev: float, min: float, max: float, memory_mb: null|float, relative: float, timed_out: bool}>>>}> $runs
      */
     private static function writeOutputFiles(string $resultsDir, array $runs): void
     {
@@ -74,7 +81,7 @@ final readonly class SiteBuilder
      * Merge all runs into an aggregated structure keyed by project → category → tool name,
      * where each tool has a list of all its runs (newest first).
      *
-     * @param non-empty-list<array{generated: string, dir: string, kinds: array<string, list<string>>, projects: array<string, array<string, list<array{tool: string, mean: float, stddev: float, min: float, max: float, memory_mb: null|float, relative: float, timed_out: bool}>>>}> $runs
+     * @param non-empty-list<array{generated: string, dir: string, environment: null|array<array-key, mixed>, kinds: array<string, list<string>>, projects: array<string, array<string, list<array{tool: string, mean: float, stddev: float, min: float, max: float, memory_mb: null|float, relative: float, timed_out: bool}>>>}> $runs
      *
      * @return array{
      *     "aggregation-date": string,
@@ -92,12 +99,18 @@ final readonly class SiteBuilder
         /** @var array<string, array<string, array<string, list<array{date: string, mean: float, stddev: float, min: float, max: float, memory_mb: null|float, relative: float, timed_out: bool}>>>> $projects */
         $projects = [];
 
-        // Iterate runs newest-first so entries are ordered newest first per tool
+        // Show only one complete run per project. Mixing older tool versions with
+        // newer runner results would make the overview misleading.
+        $seenProjects = [];
         for ($i = Iter\count($runs) - 1; $i >= 0; $i--) {
             $run = $runs[$i];
             $date = $run['generated'];
 
             foreach ($run['projects'] as $proj => $categories) {
+                if (($seenProjects[$proj] ?? false) === true) {
+                    continue;
+                }
+                $seenProjects[$proj] = true;
                 foreach ($categories as $cat => $entries) {
                     foreach ($entries as $entry) {
                         $projects[$proj][$cat][$entry['tool']][] = [

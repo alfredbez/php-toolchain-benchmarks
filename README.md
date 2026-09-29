@@ -1,129 +1,41 @@
-# PHP Toolchain Benchmarks
+# PHP toolchain benchmarks
 
-Reproducible benchmark suite for PHP **formatters**, **linters**, and **static analyzers**. Compares multiple tools and versions side-by-side across real-world open-source codebases.
+Weekly measurements of current PHP formatters, linters and static analyzers on three open-source projects. This repository is a fork of [carthage-software/php-toolchain-benchmarks](https://github.com/carthage-software/php-toolchain-benchmarks). The measurement engine and dashboard started there; this fork adds a scheduled GitHub Actions run and Linux support.
 
-Execution time is measured using a built-in profiler with multiple runs. Peak memory is calculated by polling RSS across the entire process tree (including child processes).
+[Results](https://alfredbez.github.io/php-toolchain-benchmarks/)
 
-**Latest results: <https://carthage-software.github.io/php-toolchain-benchmarks/>**
+## What is measured
 
-## Tools
+| Category | Tools |
+| --- | --- |
+| Formatters | Mago Fmt, Pretty PHP |
+| Linters | Mago Lint, PHP-CS-Fixer, PHPCS |
+| Analyzers | Mago, PHPStan stable, PHPStan 2.3.x, PHPStan stable with bleedingEdge, Psalm, Phan |
 
-| Category       | Tools                                                                                                                                                                            |
-| -------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Formatters** | [Mago Fmt](https://github.com/carthage-software/mago), [Pretty PHP](https://github.com/lkrms/pretty-php)                                                                         |
-| **Linters**    | [Mago Lint](https://github.com/carthage-software/mago), [PHP-CS-Fixer](https://github.com/PHP-CS-Fixer/PHP-CS-Fixer), [PHPCS](https://github.com/PHPCSStandards/PHP_CodeSniffer) |
-| **Analyzers**  | [Mago](https://github.com/carthage-software/mago), [PHPStan](https://github.com/phpstan/phpstan), [Psalm](https://github.com/vimeo/psalm), [Phan](https://github.com/phan/phan)  |
+The targets are `php-standard-library/php-standard-library`, `WordPress/wordpress-develop` and `magento/magento2`. Each project is measured on one `ubuntu-24.04` runner. Runs happen in separate jobs, so measurements from different projects are not directly comparable.
 
-Multiple versions of the same tool can be benchmarked simultaneously (e.g. Mago 1.7.0 through 1.10.0).
+Before each weekly run, `scripts/resolve_versions.py` selects the latest stable release of every Composer package. It also pins PHPStan's `2.3.x` branch to an exact Git commit. The resolved versions, project commit, runner image, PHP version and suite commit are saved with each raw report. A new package release can change the measured behavior, including the errors reported by an analyzer.
 
-## Benchmark Types
+For each scenario the profiler makes three timed runs and one separate memory run. Memory is the peak *sampled sum of RSS* over the process tree at 50 ms intervals; short runs are cross-checked with `/usr/bin/time`. The memory number can miss a brief spike and is not the same as unique physical memory. Analyzer results include cold runs with caches cleared and hot runs with caches warmed. Each invocation has a three-minute timeout.
 
-| Type          | Applies to | Description                                              |
-| ------------- | ---------- | -------------------------------------------------------- |
-| **Formatter** | Formatters | Format the entire project                                |
-| **Linter**    | Linters    | Lint the entire project                                  |
-| **Cold**      | Analyzers  | Cold start, caches cleared before each run               |
-| **Hot**       | Analyzers  | Caches warmed once, then measured without cache clearing |
+**Interpretation:** Compare tools only within the same project and weekly run. GitHub-hosted hardware and background load vary. The dashboard shows one complete run per project in its overview and keeps older reports as history; it does not use week-over-week deltas as a performance claim. The tools apply different rules and can report different findings, so a faster result does not imply equivalent analysis. These measurements do not establish absolute speed or memory use on your machine.
 
-## Target Projects
+The workflow runs every Sunday at 03:17 UTC and can also be started manually from the Actions tab. If setup, stability checks or a measurement fail, the workflow does not publish a partial new week.
 
-| Project                                                             | Description         |
-| ------------------------------------------------------------------- | ------------------- |
-| [azjezz/psl](https://github.com/azjezz/psl)                         | Well-typed library  |
-| [wordpress-develop](https://github.com/WordPress/wordpress-develop) | Untyped application |
-| [magento/magento2](https://github.com/magento/magento2)             | E-commerce platform |
+## Run locally
 
-## Prerequisites
+Requires PHP 8.5, Composer and Python 3. Run from the repository root:
 
-- PHP 8.5+
-- [Composer](https://getcomposer.org)
-- [just](https://github.com/casey/just) (optional, for development tasks)
-
-## Usage
-
-```bash
-# Install dependencies
+```sh
 composer install
-
-# Setup: clone projects, install tools, process configs
-just setup
-
-# Run full benchmark
-just benchmark
-
-# Filter by project, tool kind, or specific tool
-./src/main.php run --project psl --runs 5
-./src/main.php run --kind analyzer --tool phpstan --runs 3
-./src/main.php run --kind formatter --timeout 10
-
-# Build HTML results dashboard
-just build
-open results/index.html
+python3 scripts/resolve_versions.py
+php src/main.php setup --project psl
+php src/main.php run --project psl --runs 3 --timeout 3
+php src/main.php build
 ```
 
-### CLI Options
-
-| Option              | Default | Description                                                  |
-| ------------------- | ------- | ------------------------------------------------------------ |
-| `--runs N`          | 10      | Number of benchmark runs per tool                            |
-| `--timeout N`       | 5       | Timeout per run in minutes                                   |
-| `--project NAME`    | all     | Filter by project: `psl`, `wordpress`, `magento`             |
-| `--kind NAME`       | all     | Filter by tool kind: `formatter`, `linter`, `analyzer`       |
-| `--tool NAME`       | all     | Filter by tool: `mago-fmt`, `phpstan`, `psalm`, `phan`, etc. |
-| `--php-binary PATH` | current | PHP binary to use for PHP-based tools                        |
-| `--skip-stability`  | false   | Skip the CPU stability check                                 |
-
-## Results
-
-Each benchmark run produces a `results/YYYYMMDD-HHMMSS/report.json`. The `build` command aggregates all runs into:
-
-- `results/latest.json` — merged data keyed by project, category, and tool name, with the full history of runs per tool
-- `results/index.html` — self-contained HTML dashboard with overview tables, version comparison bars, memory usage, run-over-run diffs, and per-run detail tables
-
-The dashboard is automatically deployed to GitHub Pages on every push to `main`.
-
-## Adding a New Project
-
-1. Add a case to the `Project` enum in `src/Configuration/Project.php` with repo URL and ref.
-2. Create config templates in `project-configurations/<slug>/` with `{{WORKSPACE}}` and `{{CACHE_DIR}}` placeholders:
-   - `mago.toml`, `phpstan.neon`, `psalm-v6.xml`, `phan.php`, `php-cs-fixer.php`, `phpcs.xml`
-3. Run `./src/main.php setup`.
-
-## Adding a New Tool Version
-
-1. Add an entry to the `PACKAGES` constant in `src/Setup/ToolInstaller.php`.
-2. Add version-specific config templates if needed (e.g. `psalm-v6.xml` for Psalm 6).
-3. Run `./src/main.php setup`.
-
-## Adding a New Tool
-
-1. Add a case to the `Tool` enum in `src/Configuration/Tool.php`.
-2. Implement all required methods: `getKind()`, `getPackageName()`, `getComposerPackage()`, `getDisplayPrefix()`, `getConfigFilename()`, `supportsCaching()`.
-3. Add command building logic in `src/Configuration/CommandBuilder.php`.
-4. Add the package to `PACKAGES` in `src/Setup/ToolInstaller.php`.
-5. Add config templates in each `project-configurations/<project>/` directory.
-6. Run `./src/main.php setup`.
-
-## Profiling a Single Command
-
-`src/profile.php` is a standalone script that demonstrates the built-in profiler. Tool authors who want to investigate or reduce their tool's execution time and memory usage can modify this script to profile any command:
-
-```bash
-php src/profile.php
-```
-
-Edit the script to change the command, number of runs, or timeout. It outputs mean, stddev, min, max execution time and peak memory — the same measurements used by the benchmark suite.
-
-## Development
-
-```bash
-# Check formatting, linting, and static analysis
-just check
-
-# Auto-fix formatting
-just fix
-```
+Open `results/index.html`. Omit `--project psl` from setup and run to include all targets. The optional `--kind` and `--tool` filters are listed by `php src/main.php help`.
 
 ## License
 
-MIT
+MIT, as in the upstream project. See [LICENSE](LICENSE).

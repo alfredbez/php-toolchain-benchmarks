@@ -1,0 +1,99 @@
+name: Weekly benchmark
+
+on:
+  schedule:
+    - cron: '17 3 * * 0'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: weekly-benchmark
+  cancel-in-progress: false
+
+jobs:
+  resolve:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Resolve current versions
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: python3 scripts/resolve_versions.py
+      - uses: actions/upload-artifact@v4
+        with:
+          name: resolved-versions
+          path: .benchmark-versions.json
+          include-hidden-files: true
+
+  benchmark:
+    needs: resolve
+    strategy:
+      fail-fast: false
+      matrix:
+        project: [psl, wordpress, magento]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 350
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: resolved-versions
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.5'
+          coverage: none
+          extensions: :xdebug
+      - run: composer install --no-interaction
+      - run: php src/main.php setup --project ${{ matrix.project }}
+      - name: Measure
+        run: php src/main.php run --project ${{ matrix.project }} --runs 3 --timeout 3
+      - name: Capture report and environment
+        env:
+          PROJECT: ${{ matrix.project }}
+        run: python3 scripts/prepare_report.py "$PROJECT"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: benchmark-${{ matrix.project }}
+          path: artifact/report.json
+          if-no-files-found: error
+
+  publish:
+    needs: benchmark
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: true
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: benchmark-*
+          path: incoming
+      - name: Save reports
+        run: python3 scripts/store_reports.py
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.5'
+          coverage: none
+      - run: composer install --no-interaction
+      - run: php src/main.php build
+      - name: Commit report history
+        run: |
+          git config user.name 'benchmark bot'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add results
+          git commit -m 'Record weekly benchmark results'
+          git push origin HEAD:main
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: results
+      - uses: actions/deploy-pages@v4
+        id: deployment

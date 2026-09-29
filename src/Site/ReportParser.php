@@ -18,6 +18,7 @@ use Psl\Vec;
  * Handles both old reports (using "analyzer" field, no "kinds" map) and
  * new reports (using "tool" field, with "kinds" map).
  */
+/** @mago-expect lint:cyclomatic-complexity */
 final readonly class ReportParser
 {
     /**
@@ -32,7 +33,7 @@ final readonly class ReportParser
     /**
      * @param non-empty-string $resultsDir
      *
-     * @return list<array{generated: string, dir: string, kinds: array<string, list<string>>, projects: array<string, array<string, list<array{tool: string, mean: float, stddev: float, min: float, max: float, memory_mb: null|float, relative: float, timed_out: bool}>>>}>
+     * @return list<array{generated: string, dir: string, environment: null|array<array-key, mixed>, kinds: array<string, list<string>>, projects: array<string, array<string, list<array{tool: string, mean: float, stddev: float, min: float, max: float, memory_mb: null|float, relative: float, timed_out: bool}>>>}>
      */
     public static function loadAll(string $resultsDir): array
     {
@@ -63,7 +64,7 @@ final readonly class ReportParser
     /**
      * @param non-empty-string $path
      *
-     * @return null|array{generated: string, dir: string, kinds: array<string, list<string>>, projects: array<string, array<string, list<array{tool: string, mean: float, stddev: float, min: float, max: float, memory_mb: null|float, relative: float, timed_out: bool}>>>}
+     * @return null|array{generated: string, dir: string, environment: null|array<array-key, mixed>, kinds: array<string, list<string>>, projects: array<string, array<string, list<array{tool: string, mean: float, stddev: float, min: float, max: float, memory_mb: null|float, relative: float, timed_out: bool}>>>}
      */
     private static function parse(string $path): ?array
     {
@@ -97,6 +98,7 @@ final readonly class ReportParser
             'dir' => Filesystem\get_filename(Filesystem\get_directory($path)),
             'kinds' => $kinds,
             'projects' => ReportNormalizer::normalizeProjects($rawProjects),
+            'environment' => \is_array($raw['environment'] ?? null) ? $raw['environment'] : null,
         ];
     }
 }
