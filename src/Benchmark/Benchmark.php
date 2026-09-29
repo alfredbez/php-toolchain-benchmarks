@@ -11,6 +11,7 @@ use CarthageSoftware\ToolChainBenchmarks\Configuration\ToolPaths;
 use CarthageSoftware\ToolChainBenchmarks\Result\Results;
 use CarthageSoftware\ToolChainBenchmarks\Result\ResultsExporter;
 use CarthageSoftware\ToolChainBenchmarks\Support\Output;
+use Psl\Async;
 use Psl\DateTime;
 use Psl\DateTime\Duration;
 use Psl\Filesystem;
@@ -76,7 +77,7 @@ final readonly class Benchmark
             Output::warn('Skipping system stability check (--skip-stability)');
         }
 
-        if (!$this->skipStability && !SystemStability::check()) {
+        if (!$this->skipStability && !self::waitForStableSystem()) {
             Output::error('Aborting benchmarks due to unstable system.');
             Output::error('Use --skip-stability to bypass this check.');
             return 1;
@@ -127,6 +128,22 @@ final readonly class Benchmark
         Output::success(Str\format('Benchmarks complete (%s)', $elapsed));
 
         return 0;
+    }
+
+    private static function waitForStableSystem(): bool
+    {
+        for ($attempt = 1; $attempt <= 3; $attempt++) {
+            if (SystemStability::check()) {
+                return true;
+            }
+
+            if ($attempt < 3) {
+                Output::warn('Waiting 15 seconds before checking stability again.');
+                Async\sleep(Duration::seconds(15));
+            }
+        }
+
+        return false;
     }
 
     private static function runFormatterBenchmarks(Runner $runner, RunContext $ctx): void
