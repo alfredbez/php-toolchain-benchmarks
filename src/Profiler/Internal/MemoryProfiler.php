@@ -102,8 +102,7 @@ final readonly class MemoryProfiler
             if ($timeout !== null) {
                 $elapsed = Timestamp::monotonic()->since($startTime);
                 if ($elapsed->compare($timeout) !== Order::Less) {
-                    proc_terminate($proc, 9);
-                    proc_close($proc);
+                    ProcessTreeTerminator::terminate($proc);
 
                     return new ProfileFailure($command, 137, 'Memory measurement timed out');
                 }

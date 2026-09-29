@@ -95,10 +95,12 @@ final readonly class Benchmark
 
             Output::section($project->getDisplayName(), Str\format('[%d/%d]', $projectIndex, $projectCount));
 
+            ToolCoverage::warn($project, $allTools);
+
             $projectCtx = new ProjectContext($this->tools, $project, $ws, $cacheDir);
 
             foreach (ToolKind::cases() as $kind) {
-                $kindTools = Vec\filter($allTools, static fn(ToolInstance $t): bool => $t->tool->getKind() === $kind);
+                $kindTools = ToolCoverage::select($project, $kind, $allTools);
                 if ($kindTools === []) {
                     continue;
                 }

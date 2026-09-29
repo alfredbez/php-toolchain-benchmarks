@@ -99,8 +99,7 @@ final readonly class PerformanceProfiler
             if ($timeout !== null) {
                 $elapsed = Timestamp::monotonic()->since($before);
                 if ($elapsed->compare($timeout) !== Order::Less) {
-                    proc_terminate($proc, 9);
-                    proc_close($proc);
+                    ProcessTreeTerminator::terminate($proc);
 
                     return new ProfileFailure($command, -1, 'Process timed out');
                 }

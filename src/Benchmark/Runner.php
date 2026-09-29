@@ -11,12 +11,16 @@ use CarthageSoftware\ToolChainBenchmarks\Profiler\ProfileFailure;
 use CarthageSoftware\ToolChainBenchmarks\Support\Output;
 use CarthageSoftware\ToolChainBenchmarks\Support\ShellHelper;
 use Psl\DateTime\Duration;
+use Psl\Iter;
 use Psl\Str;
 use Psl\Vec;
 
 final class Runner
 {
     private bool $hadFailure = false;
+
+    /** @var array<string, true> */
+    private array $coldTimedOut = [];
 
     /**
      * @param int<1, max> $runs
@@ -77,6 +81,9 @@ final class Runner
 
             if ($result instanceof ProfileFailure) {
                 Output::warn(Str\format('Skipped %s: %s', $tool->getDisplayName(), $result->reason));
+                if (Str\contains($result->reason, 'timed out')) {
+                    $this->coldTimedOut[$ctx->project->project->value . ':' . $tool->slug] = true;
+                }
             }
 
             $this->handleResult($result, $ctx, 'Cold', $tool);
@@ -90,7 +97,11 @@ final class Runner
      */
     public function runCached(RunContext $ctx): void
     {
-        $cachingTools = Vec\filter($ctx->tools, static fn(ToolInstance $t): bool => $t->supportsCaching());
+        $cachingTools = Vec\filter(
+            $ctx->tools,
+            fn(ToolInstance $t): bool => $t->supportsCaching()
+            && !Iter\contains_key($this->coldTimedOut, $ctx->project->project->value . ':' . $t->slug),
+        );
         if ($cachingTools === []) {
             return;
         }
