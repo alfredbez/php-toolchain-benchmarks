@@ -114,7 +114,6 @@ final readonly class HtmlRenderer
             th,td{border:1px solid #ccc;padding:3px 8px;text-align:right;white-space:nowrap}
             th{background:#f5f5f5;font-weight:bold;text-align:left}
             td:first-child{text-align:left}
-            tr.winner td{font-weight:bold}
             .bar-group{margin:12px 0 20px}
             .bar-group h4{font-size:12px;margin:0 0 6px;font-weight:bold}
             .bar-row{display:flex;align-items:center;margin:2px 0;font-size:11px}
@@ -122,8 +121,6 @@ final readonly class HtmlRenderer
             .bar-track{flex:1;height:18px;background:#f5f5f5;border:1px solid #ddd;position:relative}
             .bar-fill{height:100%;background:#888}
             .bar-value{padding-left:6px;min-width:70px;white-space:nowrap}
-            .winner-bar .bar-fill{background:#333}
-            .winner-bar .bar-label{font-weight:bold}
             .diff-positive{color:#666}
             .diff-negative{color:#111;font-weight:bold}
             details{margin:4px 0;border:1px solid #eee;padding:4px 8px}
@@ -204,16 +201,9 @@ final readonly class HtmlRenderer
                     var runs=toolMap[toolNames[i]];
                     if(!runs.length)continue;
                     var r=runs[0];
-                    entries.push({tool:toolNames[i],date:r.date,mean:r.mean,stddev:r.stddev,min:r.min,max:r.max,memory_mb:r.memory_mb,timed_out:r.timed_out,relative:0});
+                    entries.push({tool:toolNames[i],date:r.date,mean:r.mean,stddev:r.stddev,min:r.min,max:r.max,memory_mb:r.memory_mb,timed_out:r.timed_out});
                 }
                 if(!entries.length)return null;
-                var valid=entries.filter(function(e){return!e.timed_out});
-                var minMean=Infinity;
-                for(var k=0;k<valid.length;k++){if(valid[k].mean<minMean)minMean=valid[k].mean}
-                for(var k=0;k<entries.length;k++){
-                    if(entries[k].timed_out)continue;
-                    entries[k].relative=minMean>0?Math.round((entries[k].mean/minMean)*10)/10:1.0;
-                }
                 entries.sort(function(a,b){
                     if(a.timed_out&&b.timed_out)return 0;
                     if(a.timed_out)return 1;
@@ -232,22 +222,20 @@ final readonly class HtmlRenderer
             /* ── Render functions ── */
 
             function renderOverviewTable(entries){
-                var h='<table><tr><th>Tool</th><th>Mean</th><th>&plusmn; StdDev</th><th>Min</th><th>Max</th><th>Memory</th><th>Relative</th></tr>';
+                var h='<table><tr><th>Tool</th><th>Mean</th><th>&plusmn; StdDev</th><th>Min</th><th>Max</th><th>Memory</th></tr>';
                 for(var i=0;i<entries.length;i++){
                     var e=entries[i];
                     if(e.timed_out){
-                        h+='<tr><td>'+e.tool+'</td><td colspan="5" style="text-align:center;color:#999">Timed out</td><td>-</td></tr>';
+                        h+='<tr><td>'+e.tool+'</td><td colspan="5" style="text-align:center;color:#999">Timed out</td></tr>';
                         continue;
                     }
-                    var w=e.relative<=1.0;
-                    h+='<tr'+(w?' class="winner"':'')+'>';
+                    h+='<tr>';
                     h+='<td>'+e.tool+'</td>';
                     h+='<td>'+fmt(e.mean)+'s</td>';
                     h+='<td>&plusmn; '+fmt(e.stddev)+'s</td>';
                     h+='<td>'+fmt(e.min)+'s</td>';
                     h+='<td>'+fmt(e.max)+'s</td>';
                     h+='<td>'+(e.memory_mb!==null?e.memory_mb.toFixed(1)+' MB':'-')+'</td>';
-                    h+='<td>'+(w?'&#x1F680; 1.0x':'x'+e.relative.toFixed(1))+'</td>';
                     h+='</tr>';
                 }
                 return h+'</table>';
@@ -277,15 +265,11 @@ final readonly class HtmlRenderer
                     vers.sort(function(a,b){return a.version.localeCompare(b.version,undefined,{numeric:true})});
                     var maxMean=0;
                     for(var vi=0;vi<vers.length;vi++){if(vers[vi].mean>maxMean)maxMean=vers[vi].mean}
-                    var minMean=vers[0].mean;
-                    for(var vi2=0;vi2<vers.length;vi2++){if(vers[vi2].mean<minMean)minMean=vers[vi2].mean}
-
                     h+='<div class="bar-group"><h4>'+tn+'</h4>';
                     for(var vi3=0;vi3<vers.length;vi3++){
                         var v=vers[vi3];
                         var pct=(v.mean/maxMean*100).toFixed(1);
-                        var isWinner=v.mean===minMean;
-                        h+='<div class="bar-row'+(isWinner?' winner-bar':'')+'">';
+                        h+='<div class="bar-row">';
                         h+='<div class="bar-label">'+v.name+'</div>';
                         h+='<div class="bar-track"><div class="bar-fill" style="width:'+pct+'%"></div></div>';
                         h+='<div class="bar-value">'+fmt(v.mean)+'s</div>';
@@ -329,16 +313,12 @@ final readonly class HtmlRenderer
                     var entries=result.entries.filter(function(e){return e.memory_mb!==null&&!e.timed_out});
                     if(entries.length){
                         entries.sort(function(a,b){return a.memory_mb-b.memory_mb});
-                        var minMem=entries[0].memory_mb;
                         h+='<h2>Memory</h2>';
-                        h+='<table><tr><th>Tool</th><th>Peak Memory (MB)</th><th>Relative</th></tr>';
+                        h+='<table><tr><th>Tool</th><th>Peak Memory (MB)</th></tr>';
                         for(var i=0;i<entries.length;i++){
                             var e=entries[i];
-                            var rel=(e.memory_mb/minMem).toFixed(1);
-                            var w=e.memory_mb===minMem;
-                            h+='<tr'+(w?' class="winner"':'')+'><td>'+e.tool+'</td>';
-                            h+='<td>'+e.memory_mb.toFixed(1)+'</td>';
-                            h+='<td>'+(w?'&#x1F389; 1.0x':'x'+rel)+'</td></tr>';
+                            h+='<tr><td>'+e.tool+'</td>';
+                            h+='<td>'+e.memory_mb.toFixed(1)+'</td></tr>';
                         }
                         h+='</table>';
                     }
@@ -348,12 +328,12 @@ final readonly class HtmlRenderer
             }
 
             function buildTable(entries){
-                var h='<table><tr><th>Tool</th><th>Mean</th><th>StdDev</th><th>Min</th><th>Max</th><th>Memory</th><th>Rel</th></tr>';
+                var h='<table><tr><th>Tool</th><th>Mean</th><th>StdDev</th><th>Min</th><th>Max</th><th>Memory</th></tr>';
                 for(var i=0;i<entries.length;i++){
                     var e=entries[i];
                     var name=e.tool||"";
                     if(e.timed_out){
-                        h+='<tr><td>'+name+'</td><td colspan="5" style="text-align:center;color:#999">Timed out</td><td>-</td></tr>';
+                        h+='<tr><td>'+name+'</td><td colspan="5" style="text-align:center;color:#999">Timed out</td></tr>';
                         continue;
                     }
                     h+='<tr><td>'+name+'</td>';
@@ -362,7 +342,7 @@ final readonly class HtmlRenderer
                     h+='<td>'+fmt(e.min)+'s</td>';
                     h+='<td>'+fmt(e.max)+'s</td>';
                     h+='<td>'+(e.memory_mb!==null?e.memory_mb.toFixed(1)+' MB':'-')+'</td>';
-                    h+='<td>'+(e.relative<=1.0?'1.0x':'x'+e.relative.toFixed(1))+'</td></tr>';
+                    h+='</tr>';
                 }
                 return h+'</table>';
             }
