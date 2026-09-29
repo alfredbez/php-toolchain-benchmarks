@@ -14,6 +14,7 @@ use Psl\Shell;
 use Psl\Str;
 use Psl\Type;
 
+/** @mago-expect lint:cyclomatic-complexity */
 final readonly class SystemStability
 {
     /**
@@ -92,6 +93,26 @@ final readonly class SystemStability
      */
     private static function getCpuUsage(): ?int
     {
+        if (\PHP_OS_FAMILY === 'Linux') {
+            $before = self::linuxCpuTimes();
+            if ($before === null) {
+                return null;
+            }
+            \usleep(100_000);
+            $after = self::linuxCpuTimes();
+            if ($after === null || $after[0] === $before[0]) {
+                return null;
+            }
+
+            /** @var int<0, 100> $usage */
+            $usage = Math\clamp(
+                (int) \round(100 * (1 - (($after[1] - $before[1]) / ($after[0] - $before[0])))),
+                0,
+                100,
+            );
+            return $usage;
+        }
+
         try {
             $output = Shell\execute('top', ['-l', '1', '-n', '0']);
         } catch (Shell\Exception\ExceptionInterface) {
@@ -110,5 +131,22 @@ final readonly class SystemStability
 
         /** @var int<0, 100> */
         return Math\clamp($total, 0, 100);
+    }
+
+    /**
+     * @return null|array{int, int} Total and idle CPU ticks.
+     */
+    private static function linuxCpuTimes(): ?array
+    {
+        $line = \file('/proc/stat')[0] ?? null;
+        if ($line === null) {
+            return null;
+        }
+        $fields = \preg_split('/\s+/', \trim($line));
+        if ($fields === false || ($fields[0] ?? '') !== 'cpu' || \count($fields) < 6) {
+            return null;
+        }
+        $ticks = \array_map('intval', \array_slice($fields, 1));
+        return [\array_sum($ticks), $ticks[3] + $ticks[4]];
     }
 }

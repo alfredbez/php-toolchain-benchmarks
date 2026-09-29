@@ -33,7 +33,7 @@ final readonly class ProjectContext
      */
     public function configDir(ToolInstance $tool): string
     {
-        return Str\format('%s/.bench-configs/%s', $this->workspace, $tool->installSlug);
+        return Str\format('%s/.bench-configs/%s', $this->workspace, $tool->configSlug());
     }
 
     /**
@@ -41,6 +41,6 @@ final readonly class ProjectContext
      */
     public function toolCacheDir(ToolInstance $tool): string
     {
-        return Str\format('%s/%s/%s', $this->cacheDir, $this->project->value, $tool->installSlug);
+        return Str\format('%s/%s/%s', $this->cacheDir, $this->project->value, $tool->configSlug());
     }
 }

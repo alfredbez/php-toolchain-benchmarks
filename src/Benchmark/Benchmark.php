@@ -113,6 +113,11 @@ final readonly class Benchmark
             }
         }
 
+        if ($runner->hasFailures()) {
+            Output::error('At least one tool failed; no report was saved.');
+            return 1;
+        }
+
         $exporter = new ResultsExporter($results);
         $exporter->printFinalReport();
         $exporter->exportJson($resultsDir . '/report.json');

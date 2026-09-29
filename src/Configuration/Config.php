@@ -14,22 +14,25 @@ use Psl\Str;
 final readonly class Config
 {
     /**
-     * Process a config template, replacing {{WORKSPACE}} and {{CACHE_DIR}}.
+     * Process a config template, replacing path placeholders.
      *
      * @param non-empty-string $templateFile
      * @param non-empty-string $outputFile
      * @param non-empty-string $workspace
      * @param non-empty-string $cacheDir
+     * @param non-empty-string $toolDir
      */
     public static function processTemplate(
         string $templateFile,
         string $outputFile,
         string $workspace,
         string $cacheDir,
+        string $toolDir,
     ): void {
         $content = File\read($templateFile);
         $content = Str\replace($content, '{{WORKSPACE}}', $workspace);
         $content = Str\replace($content, '{{CACHE_DIR}}', $cacheDir);
+        $content = Str\replace($content, '{{TOOL_DIR}}', $toolDir);
 
         if (Filesystem\is_file($outputFile)) {
             Filesystem\delete_file($outputFile);

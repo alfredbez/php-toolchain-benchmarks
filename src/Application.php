@@ -36,12 +36,21 @@ final class Application
         $rest = Vec\slice($args, 1);
 
         return match ($command) {
-            'setup' => Setup\Setup::run($rootDir),
+            'setup' => Setup\Setup::run($rootDir, self::setupProjectOption($rest)),
             'run' => self::runBenchmark($rootDir, $rest),
             'build' => Site\SiteBuilder::run($rootDir),
             'help', '--help', '-h' => self::printUsage(),
             default => self::unknownCommand($command),
         };
+    }
+
+    /**
+     * @param list<string> $args
+     */
+    private static function setupProjectOption(array $args): ?Project
+    {
+        $index = \array_search('--project', $args, true);
+        return $index === false ? null : Project::tryFrom($args[$index + 1] ?? '');
     }
 
     /**
@@ -78,6 +87,7 @@ final class Application
             $i++;
         }
 
+        /** @var int<1, max> $runs */
         $benchmark = new Benchmark(
             tools: ToolPaths::resolve($rootDir, $phpBinary),
             runs: $runs,
@@ -94,7 +104,7 @@ final class Application
         Output::write('PHP Toolchain Benchmarks');
         Output::blank();
         Output::write('Usage:');
-        Output::write('  ./src/main.php setup            Setup: clone projects, install deps');
+        Output::write('  ./src/main.php setup [--project NAME]  Setup tools and projects');
         Output::write('  ./src/main.php run [OPTIONS]    Run benchmarks');
         Output::write('  ./src/main.php build            Build HTML results page');
         Output::blank();

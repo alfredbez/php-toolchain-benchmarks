@@ -13,6 +13,10 @@ use Psl\Iter;
 use Psl\Shell;
 use Psl\Str;
 
+/**
+ * @mago-expect lint:cyclomatic-complexity
+ * @mago-expect lint:kan-defect
+ */
 final readonly class Setup
 {
     /**
@@ -20,7 +24,7 @@ final readonly class Setup
      *
      * @param non-empty-string $rootDir
      */
-    public static function run(string $rootDir): int
+    public static function run(string $rootDir, ?Project $selectedProject = null): int
     {
         $workspaceDir = $rootDir . '/workspace';
         $cacheDir = $rootDir . '/cache';
@@ -44,6 +48,9 @@ final readonly class Setup
 
         $tasks = [];
         foreach (Project::cases() as $project) {
+            if ($selectedProject !== null && $project !== $selectedProject) {
+                continue;
+            }
             $tasks[] = static fn(): int => self::setupProject($rootDir, $project, $workspaceDir, $cacheDir);
         }
 
@@ -132,14 +139,14 @@ final readonly class Setup
                 continue;
             }
 
-            $dedupeKey = $tool->installSlug . ':' . $configFilename;
+            $dedupeKey = $tool->configSlug() . ':' . $configFilename;
             if (Iter\contains_key($processed, $dedupeKey)) {
                 continue;
             }
             $processed[$dedupeKey] = true;
 
             $installSlug = $tool->installSlug;
-            $toolCacheDir = Str\format('%s/%s/%s', $cacheDir, $project->value, $installSlug);
+            $toolCacheDir = Str\format('%s/%s/%s', $cacheDir, $project->value, $tool->configSlug());
             Filesystem\create_directory($toolCacheDir);
 
             $templateFile = Str\format('%s/project-configurations/%s/%s', $rootDir, $project->value, $configFilename);
@@ -147,13 +154,14 @@ final readonly class Setup
                 continue;
             }
 
-            $configOutput = Str\format('%s/.bench-configs/%s', $ws, $installSlug);
+            $configOutput = Str\format('%s/.bench-configs/%s', $ws, $tool->configSlug());
             Filesystem\create_directory($configOutput);
             Config::processTemplate(
                 $templateFile,
                 Str\format('%s/%s', $configOutput, $configFilename),
                 $ws,
                 $toolCacheDir,
+                Str\format('%s/tools/%s', $rootDir, $installSlug),
             );
             Output::success(Str\format('Processed %s for %s (%s)', $configFilename, $project->value, $installSlug));
         }

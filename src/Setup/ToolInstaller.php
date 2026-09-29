@@ -19,6 +19,7 @@ use Psl\Vec;
  * Installs each tool version into its own isolated tools/<slug>/ directory,
  * preventing autoloader conflicts between the benchmark suite and the tools.
  */
+/** @mago-expect lint:cyclomatic-complexity */
 final readonly class ToolInstaller
 {
     /**
@@ -29,15 +30,12 @@ final readonly class ToolInstaller
      * @var list<array{non-empty-string, non-empty-string, non-empty-string}>
      */
     private const array PACKAGES = [
-        ['mago',         'carthage-software/mago',    '1.20.1'],
-        ['mago',         'carthage-software/mago',    '1.20.0'],
-        ['mago',         'carthage-software/mago',    '1.10.0'],
-        ['mago',         'carthage-software/mago',    '1.7.0'],
+        ['mago',         'carthage-software/mago',    '1.50.0'],
         ['pretty-php',   'lkrms/pretty-php',          '0.4.95'],
         ['php-cs-fixer', 'php-cs-fixer/shim',         '3.75.0'],
         ['phpcs',        'squizlabs/php_codesniffer', '3.13.0'],
-        ['phpstan',      'phpstan/phpstan',           '2.1.47'],
-        ['phpstan',      'phpstan/phpstan',           '2.1.39'],
+        ['phpstan',      'phpstan/phpstan',           '2.2.16'],
+        ['phpstan-next', 'phpstan/phpstan',           '2.3.x-dev'],
         ['psalm',        'vimeo/psalm',               '6.15.1'],
         ['phan',         'phan/phan',                 '6.0.1'],
     ];
@@ -53,6 +51,24 @@ final readonly class ToolInstaller
     ];
 
     /**
+     * The weekly workflow writes exact resolved versions here before setup.
+     * Local runs use the defaults above when the file is absent.
+     *
+     * @return list<array{non-empty-string, non-empty-string, non-empty-string}>
+     */
+    private static function packages(): array
+    {
+        $path = \dirname(__DIR__, 2) . '/.benchmark-versions.json';
+        if (!Filesystem\is_file($path)) {
+            return self::PACKAGES;
+        }
+
+        /** @var list<array{non-empty-string, non-empty-string, non-empty-string}> $packages */
+        $packages = Json\decode(File\read($path));
+        return $packages;
+    }
+
+    /**
      * @param non-empty-string $rootDir
      */
     public static function install(string $rootDir): bool
@@ -62,8 +78,8 @@ final readonly class ToolInstaller
         $toolsDir = $rootDir . '/tools';
         Filesystem\create_directory($toolsDir);
 
-        foreach (self::PACKAGES as [$name, $package, $version]) {
-            $slug = Str\format('%s-%s', $name, $version);
+        foreach (self::packages() as [$name, $package, $version]) {
+            $slug = self::installSlug($name, $version);
             if (!self::installPackage($toolsDir, $name, $slug, $package, $version)) {
                 return false;
             }
@@ -80,13 +96,21 @@ final readonly class ToolInstaller
     public static function allTools(): array
     {
         $instances = [];
-        foreach (self::PACKAGES as [$name, $package, $version]) {
-            $installSlug = Str\format('%s-%s', $name, $version);
+        foreach (self::packages() as [$name, $package, $version]) {
+            /** @var non-empty-string $installSlug */
+            $installSlug = self::installSlug($name, $version);
             $tools = self::toolsForPackage($name);
 
             foreach ($tools as $tool) {
-                $slug = Str\format('%s-%s', $tool->value, $version);
+                /** @var non-empty-string $slug */
+                $slug = self::installSlug($tool->value, $version);
                 $instances[] = new ToolInstance($tool, $version, $slug, $installSlug);
+            }
+
+            if ($name === 'phpstan') {
+                /** @var non-empty-string $edgeSlug */
+                $edgeSlug = self::installSlug('phpstan-bleeding-edge', $version);
+                $instances[] = new ToolInstance(Tool::PhpStanBleedingEdge, $version, $edgeSlug, $installSlug);
             }
         }
 
@@ -112,7 +136,15 @@ final readonly class ToolInstaller
      */
     private static function toolsForPackage(string $packageName): array
     {
-        return Vec\filter(Tool::cases(), static fn(Tool $t): bool => $t->getPackageName() === $packageName);
+        return Vec\filter(
+            Tool::cases(),
+            static fn(Tool $t): bool => $t->getPackageName() === $packageName && $t !== Tool::PhpStanBleedingEdge,
+        );
+    }
+
+    private static function installSlug(string $name, string $version): string
+    {
+        return Str\format('%s-%s', $name, Str\replace($version, '#', '-'));
     }
 
     private static function installPackage(
@@ -135,6 +167,8 @@ final readonly class ToolInstaller
             'require' => [
                 $package => $version,
             ],
+            'minimum-stability' => $name === 'phpstan-next' ? 'dev' : 'stable',
+            'prefer-stable' => true,
             'config' => [
                 'allow-plugins' => $allowPlugins !== [] ? $allowPlugins : (object) [],
                 'platform-check' => false,

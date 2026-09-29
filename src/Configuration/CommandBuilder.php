@@ -43,8 +43,12 @@ final readonly class CommandBuilder
             Tool::PhpCsFixer => 'env PHP_CS_FIXER_IGNORE_ENV=1 '
                 . self::phpToolCommand($tools, $instance, $configDir, 'fix --dry-run --config='),
             Tool::Phpcs => self::phpToolCommand($tools, $instance, $configDir, '--standard='),
-            Tool::PhpStan => self::phpToolCommand($tools, $instance, $configDir, 'analyse --configuration=')
-                . ' --memory-limit=-1',
+            Tool::PhpStan, Tool::PhpStanNext, Tool::PhpStanBleedingEdge => self::phpToolCommand(
+                $tools,
+                $instance,
+                $configDir,
+                'analyse --configuration=',
+            ) . ' --memory-limit=-1',
             Tool::Psalm => self::phpToolCommand($tools, $instance, $configDir, '--config=') . ' --show-info',
             Tool::Phan => self::phpToolCommand($tools, $instance, $configDir, '--config-file ') . ' --memory-limit -1',
         };

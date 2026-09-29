@@ -41,7 +41,7 @@ final readonly class ToolPaths
             '%s/tools/%s/vendor/bin/%s',
             $this->rootDir,
             $instance->installSlug,
-            $instance->tool->getPackageName(),
+            $instance->tool->getBinaryName(),
         );
     }
 
@@ -55,14 +55,6 @@ final readonly class ToolPaths
     public function magoBinaryFor(string $installSlug): string
     {
         $toolDir = Str\format('%s/tools/%s', $this->rootDir, $installSlug);
-        $version = Str\after($installSlug, 'mago-') ?? $installSlug;
-
-        // TODO(azjezz): hardcoded platform, improve this later.
-        return Str\format(
-            '%s/vendor/carthage-software/mago/composer/bin/%s/mago-%s-aarch64-apple-darwin/mago',
-            $toolDir,
-            $version,
-            $version,
-        );
+        return Str\format('%s/vendor/bin/mago', $toolDir);
     }
 }

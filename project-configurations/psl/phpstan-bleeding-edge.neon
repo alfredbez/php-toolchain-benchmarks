@@ -1,0 +1,10 @@
+includes:
+    - {{TOOL_DIR}}/vendor/phpstan/phpstan/conf/bleedingEdge.neon
+
+parameters:
+    level: 9
+    phpVersion: 80300
+    paths:
+        - {{WORKSPACE}}/src
+        - {{WORKSPACE}}/examples
+    tmpDir: {{CACHE_DIR}}

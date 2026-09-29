@@ -32,6 +32,11 @@ final readonly class ToolInstance
      */
     public function getDisplayName(): string
     {
+        if ($this->tool === Tool::PhpStanNext) {
+            $sha = Str\after($this->version, '#');
+            return Str\format('PHPStan 2.3.x@%s', $sha !== null ? \substr($sha, 0, 7) : 'dev');
+        }
+
         return Str\format('%s %s', $this->tool->getDisplayPrefix(), $this->version);
     }
 
@@ -63,8 +68,18 @@ final readonly class ToolInstance
             '%s/tools/%s/vendor/bin/%s',
             $rootDir,
             $this->installSlug,
-            $this->tool->getPackageName(),
+            $this->tool->getBinaryName(),
         ));
+    }
+
+    /**
+     * The bleeding-edge config needs its own cache and config directory.
+     *
+     * @return non-empty-string
+     */
+    public function configSlug(): string
+    {
+        return $this->tool === Tool::PhpStanBleedingEdge ? $this->slug : $this->installSlug;
     }
 
     /**

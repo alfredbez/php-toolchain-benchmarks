@@ -55,7 +55,7 @@ final readonly class MemoryProfiler
             return new ProfileFailure($command, $exitCode, Str\format('Process failed (exit code %d)', $exitCode));
         }
 
-        // Polling can miss peaks between samples — cross-check with /usr/bin/time
+        // Polling can miss peaks between samples. Cross-check short runs with time.
         if ($peakMb === null || $peakMb < 100.0) {
             PrepareRunner::run($prepareCommand);
             $timeMb = self::measureWithTime($command) ?? 0.0;
@@ -127,7 +127,7 @@ final readonly class MemoryProfiler
     }
 
     /**
-     * Re-run the command under /usr/bin/time -l to get kernel-reported peak RSS.
+     * Re-run the command under /usr/bin/time to get kernel-reported peak RSS.
      *
      * @param non-empty-string $command
      */
@@ -136,13 +136,23 @@ final readonly class MemoryProfiler
         try {
             $output = Shell\execute('sh', [
                 '-c',
-                Str\format('/usr/bin/time -l sh -c %s 2>&1', \escapeshellarg($command . ' >/dev/null 2>&1')),
+                Str\format(
+                    '/usr/bin/time %s sh -c %s 2>&1',
+                    \PHP_OS_FAMILY === 'Linux' ? '-v' : '-l',
+                    \escapeshellarg($command . ' >/dev/null 2>&1'),
+                ),
             ]);
         } catch (Shell\Exception\FailedExecutionException $e) {
             $output = $e->getOutput();
         }
 
-        // macOS: "  1234567  maximum resident set size" (bytes)
+        if (\PHP_OS_FAMILY === 'Linux') {
+            $matches = Regex\first_match($output, '/Maximum resident set size \(kbytes\):\s*(\d+)/');
+            $kilobytes = (int) ($matches[1] ?? '0');
+            return $kilobytes > 0 ? Math\round($kilobytes / 1024, 1) : null;
+        }
+
+        // macOS reports bytes.
         $matches = Regex\first_match($output, '/(\d+)\s+maximum resident set size/');
         $bytes = (int) ($matches[1] ?? '0');
 

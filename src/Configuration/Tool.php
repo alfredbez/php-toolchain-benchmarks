@@ -26,6 +26,8 @@ enum Tool: string
     // Analyzers
     case MagoAnalyze = 'mago-analyze';
     case PhpStan = 'phpstan';
+    case PhpStanNext = 'phpstan-next';
+    case PhpStanBleedingEdge = 'phpstan-bleeding-edge';
     case Psalm = 'psalm';
     case Phan = 'phan';
 
@@ -34,7 +36,13 @@ enum Tool: string
         return match ($this) {
             self::MagoFmt, self::PrettyPhp => ToolKind::Formatter,
             self::MagoLint, self::PhpCsFixer, self::Phpcs => ToolKind::Linter,
-            self::MagoAnalyze, self::PhpStan, self::Psalm, self::Phan => ToolKind::Analyzer,
+            self::MagoAnalyze,
+            self::PhpStan,
+            self::PhpStanNext,
+            self::PhpStanBleedingEdge,
+            self::Psalm,
+            self::Phan,
+                => ToolKind::Analyzer,
         };
     }
 
@@ -50,7 +58,8 @@ enum Tool: string
             self::PrettyPhp => 'pretty-php',
             self::PhpCsFixer => 'php-cs-fixer',
             self::Phpcs => 'phpcs',
-            self::PhpStan => 'phpstan',
+            self::PhpStan, self::PhpStanBleedingEdge => 'phpstan',
+            self::PhpStanNext => 'phpstan-next',
             self::Psalm => 'psalm',
             self::Phan => 'phan',
         };
@@ -68,9 +77,22 @@ enum Tool: string
             self::PrettyPhp => 'lkrms/pretty-php',
             self::PhpCsFixer => 'php-cs-fixer/shim',
             self::Phpcs => 'squizlabs/php_codesniffer',
-            self::PhpStan => 'phpstan/phpstan',
+            self::PhpStan, self::PhpStanNext, self::PhpStanBleedingEdge => 'phpstan/phpstan',
             self::Psalm => 'vimeo/psalm',
             self::Phan => 'phan/phan',
+        };
+    }
+
+    /**
+     * Composer's executable name differs from the label for PHPStan 2.3.x.
+     *
+     * @return non-empty-string
+     */
+    public function getBinaryName(): string
+    {
+        return match ($this) {
+            self::PhpStanNext, self::PhpStanBleedingEdge => 'phpstan',
+            default => $this->getPackageName(),
         };
     }
 
@@ -89,6 +111,8 @@ enum Tool: string
             self::Phpcs => 'PHPCS',
             self::MagoAnalyze => 'Mago',
             self::PhpStan => 'PHPStan',
+            self::PhpStanNext => 'PHPStan',
+            self::PhpStanBleedingEdge => 'PHPStan bleedingEdge',
             self::Psalm => 'Psalm',
             self::Phan => 'Phan',
         };
@@ -107,7 +131,13 @@ enum Tool: string
      */
     public function supportsCaching(): bool
     {
-        return $this === self::PhpStan || $this === self::Psalm || $this === self::Phan;
+        return (
+            $this === self::PhpStan
+            || $this === self::PhpStanNext
+            || $this === self::PhpStanBleedingEdge
+            || $this === self::Psalm
+            || $this === self::Phan
+        );
     }
 
     /**
@@ -126,7 +156,8 @@ enum Tool: string
             self::PrettyPhp => null,
             self::PhpCsFixer => 'php-cs-fixer.php',
             self::Phpcs => 'phpcs.xml',
-            self::PhpStan => 'phpstan.neon',
+            self::PhpStan, self::PhpStanNext => 'phpstan.neon',
+            self::PhpStanBleedingEdge => 'phpstan-bleeding-edge.neon',
             self::Psalm => Str\format('psalm-v%s.xml', Str\before($version, '.') ?? $version),
             self::Phan => 'phan.php',
         };

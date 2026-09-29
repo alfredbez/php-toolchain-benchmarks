@@ -3,6 +3,10 @@
 /tools/
 /cache/
 /composer.lock
+/.benchmark-versions.json
+/artifact/
+/incoming/
+__pycache__/
 /results/index.html
 /results/latest.json
 .DS_Store

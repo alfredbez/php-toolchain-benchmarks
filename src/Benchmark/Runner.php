@@ -14,8 +14,10 @@ use Psl\DateTime\Duration;
 use Psl\Str;
 use Psl\Vec;
 
-final readonly class Runner
+final class Runner
 {
+    private bool $hadFailure = false;
+
     /**
      * @param int<1, max> $runs
      */
@@ -23,6 +25,11 @@ final readonly class Runner
         private int $runs,
         private ?Duration $timeout = null,
     ) {}
+
+    public function hasFailures(): bool
+    {
+        return $this->hadFailure;
+    }
 
     /**
      * Run a benchmark for formatters or linters.
@@ -153,7 +160,10 @@ final readonly class Runner
 
         if (Str\contains($result->reason, 'timed out')) {
             $ctx->results->addTimedOut($ctx->project->project, $category, $tool->getDisplayName());
+            return;
         }
+
+        $this->hadFailure = true;
     }
 
     private function createProfiler(): CommandProfiler
