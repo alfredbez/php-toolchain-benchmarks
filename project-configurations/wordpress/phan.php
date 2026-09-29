@@ -17,7 +17,7 @@ return [
     'allow_missing_properties' => false,
     'null_casts_as_any_type' => false,
     'scalar_implicit_cast' => false,
-    'processes' => 10,
+    'processes' => 1,
     'plugins' => [
         'AlwaysReturnPlugin',
         'DollarDollarPlugin',

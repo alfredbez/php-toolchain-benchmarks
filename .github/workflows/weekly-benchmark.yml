@@ -48,7 +48,7 @@ jobs:
       - run: composer install --no-interaction
       - run: php src/main.php setup --project ${{ matrix.project }}
       - name: Measure
-        run: php src/main.php run --project ${{ matrix.project }} --runs 3 --timeout 3
+        run: php src/main.php run --project ${{ matrix.project }} --runs 3 --timeout 10
       - name: Capture report and environment
         env:
           PROJECT: ${{ matrix.project }}
