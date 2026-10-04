@@ -10,11 +10,14 @@ from pathlib import Path
 
 
 def main(project):
-    reports = sorted(Path("results").glob("*/report.json"))
+    reports = []
+    for path in sorted(Path("results").glob("*/report.json")):
+        report = json.loads(path.read_text())
+        if project in report.get("projects", {}) and "environment" not in report:
+            reports.append(report)
     if len(reports) != 1:
-        raise RuntimeError(f"Expected one report, found {len(reports)}")
-    path = reports[0]
-    report = json.loads(path.read_text())
+        raise RuntimeError(f"Expected one unstamped {project} report, found {len(reports)}")
+    report = reports[0]
     versions = json.loads(Path(".benchmark-versions.json").read_text())
     target_sha = subprocess.check_output(
         ["git", "-C", f"workspace/{project}", "rev-parse", "HEAD"], text=True

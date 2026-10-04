@@ -7,6 +7,7 @@ check:
     mago fmt --check
     mago lint
     mago analyze
+    python3 -m unittest discover -s tests -p 'test_*.py'
 
 # Automatically fix code style, linting and static analysis issues. Use with --unsafe to allow unsafe fixes.
 fix:
