@@ -1,0 +1,222 @@
+{
+  "generated": "2026-11-15 12:11:38",
+  "kinds": {
+    "Formatters": [
+      "Formatter"
+    ],
+    "Linters": [
+      "Linter"
+    ],
+    "Analyzers": [
+      "Cold",
+      "Hot"
+    ]
+  },
+  "projects": {
+    "magento": {
+      "Formatter": [
+        {
+          "tool": "Mago Fmt 1.60.1",
+          "mean": 1.8808841379999999,
+          "stddev": 0.023082836,
+          "min": 1.86214053,
+          "max": 1.913401868,
+          "memory_mb": 438.7,
+          "relative": 1.0,
+          "timed_out": false
+        },
+        {
+          "tool": "Pretty PHP v0.4.95",
+          "mean": 76.109047473,
+          "stddev": 0.97905018,
+          "min": 75.033436174,
+          "max": 77.401905527,
+          "memory_mb": 161.5,
+          "relative": 40.5,
+          "timed_out": false
+        }
+      ],
+      "Linter": [
+        {
+          "tool": "Mago Lint 1.60.1",
+          "mean": 1.511060719,
+          "stddev": 0.001650626,
+          "min": 1.5095535629999999,
+          "max": 1.513358064,
+          "memory_mb": 383.5,
+          "relative": 1.0,
+          "timed_out": false
+        },
+        {
+          "tool": "PHPCS 4.0.4",
+          "mean": 91.151712247,
+          "stddev": 0.324235017,
+          "min": 90.694016221,
+          "max": 91.404607725,
+          "memory_mb": 539.1,
+          "relative": 60.3,
+          "timed_out": false
+        },
+        {
+          "tool": "PHP-CS-Fixer v3.95.30",
+          "mean": 431.501931764,
+          "stddev": 4.560791773,
+          "min": 425.069385378,
+          "max": 435.128074018,
+          "memory_mb": 619.8,
+          "relative": 285.6,
+          "timed_out": false
+        }
+      ],
+      "Cold": [
+        {
+          "tool": "Psalm 7.6.0",
+          "mean": 0.100534688,
+          "stddev": 6.6156e-05,
+          "min": 0.100482395,
+          "max": 0.100628022,
+          "memory_mb": 63.6,
+          "relative": 1.0,
+          "timed_out": false
+        },
+        {
+          "tool": "Mago 1.60.1",
+          "mean": 6.6377086290000005,
+          "stddev": 0.153792985,
+          "min": 6.506578613,
+          "max": 6.853547097,
+          "memory_mb": 2566.9,
+          "relative": 66.0,
+          "timed_out": false
+        },
+        {
+          "tool": "PHPStan bleedingEdge 2.3.5",
+          "mean": 143.229822611,
+          "stddev": 0.441772314,
+          "min": 142.707374124,
+          "max": 143.787745104,
+          "memory_mb": 5200.1,
+          "relative": 1424.7,
+          "timed_out": false
+        },
+        {
+          "tool": "PHPStan 2.3.x@72053a4",
+          "mean": 146.269492589,
+          "stddev": 0.206709636,
+          "min": 146.017781128,
+          "max": 146.524089595,
+          "memory_mb": 5234.8,
+          "relative": 1454.9,
+          "timed_out": false
+        },
+        {
+          "tool": "PHPStan 2.3.5",
+          "mean": 147.951641887,
+          "stddev": 7.698970177,
+          "min": 140.562134918,
+          "max": 158.571538169,
+          "memory_mb": 5194.6,
+          "relative": 1471.6,
+          "timed_out": false
+        }
+      ],
+      "Hot": [
+        {
+          "tool": "Psalm 7.6.0",
+          "mean": 0.10070113,
+          "stddev": 2.2683e-05,
+          "min": 0.100683273,
+          "max": 0.100733138,
+          "memory_mb": 63.5,
+          "relative": 1.0,
+          "timed_out": false
+        },
+        {
+          "tool": "PHPStan bleedingEdge 2.3.5",
+          "mean": 10.248362786,
+          "stddev": 0.094283383,
+          "min": 10.180871502,
+          "max": 10.381696227,
+          "memory_mb": 1702.4,
+          "relative": 101.8,
+          "timed_out": false
+        },
+        {
+          "tool": "PHPStan 2.3.5",
+          "mean": 10.315456953,
+          "stddev": 0.125637705,
+          "min": 10.180966547,
+          "max": 10.483258099,
+          "memory_mb": 1700.9,
+          "relative": 102.4,
+          "timed_out": false
+        },
+        {
+          "tool": "PHPStan 2.3.x@72053a4",
+          "mean": 10.902485458,
+          "stddev": 0.165694737,
+          "min": 10.784260669,
+          "max": 11.136809992,
+          "memory_mb": 1750.5,
+          "relative": 108.3,
+          "timed_out": false
+        }
+      ]
+    }
+  },
+  "environment": {
+    "runner": "GitHub Actions 1000001645",
+    "image": "ubuntu24",
+    "image_version": "20261111.370.1",
+    "machine": "x86_64",
+    "kernel": "7.0.0-1017-azure",
+    "php": "8.5.12",
+    "project_commit": "542a11c7b680d1bece1e7d86065ac939e130438c",
+    "suite_commit": "7ea7a395c3346f99f871de25003602aa4b8a53ac",
+    "workflow_run": "43705959712",
+    "timing_runs": 3,
+    "memory_runs": 1,
+    "versions": [
+      [
+        "mago",
+        "carthage-software/mago",
+        "1.60.1"
+      ],
+      [
+        "pretty-php",
+        "lkrms/pretty-php",
+        "v0.4.95"
+      ],
+      [
+        "php-cs-fixer",
+        "php-cs-fixer/shim",
+        "v3.95.30"
+      ],
+      [
+        "phpcs",
+        "squizlabs/php_codesniffer",
+        "4.0.4"
+      ],
+      [
+        "phpstan",
+        "phpstan/phpstan",
+        "2.3.5"
+      ],
+      [
+        "phpstan-next",
+        "phpstan/phpstan",
+        "2.3.x-dev#72053a4434f20ed7ea8699ce7963f78767819a76"
+      ],
+      [
+        "psalm",
+        "vimeo/psalm",
+        "7.6.0"
+      ],
+      [
+        "phan",
+        "phan/phan",
+        "6.0.11"
+      ]
+    ]
+  }
+}
